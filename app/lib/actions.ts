@@ -4,10 +4,10 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import postgres from "postgres";
 import { redirect } from "next/navigation";
-import bcrypt from "bcrypt"; 
 import { signIn } from '@/auth';
 import { AuthError } from 'next-auth';
 
+// === Schema Definitions ===
 const FormSchema = z.object({
   id: z.string(),
   customerId: z.string({
@@ -22,29 +22,12 @@ const FormSchema = z.object({
   date: z.string(),
 });
 
-const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
-export async function authenticate(
-  prevState: string | undefined,
-  formData: FormData,
-) {
-  try {
-    await signIn('credentials', formData);
-  } catch (error) {
-    if (error instanceof AuthError) {
-      switch (error.type) {
-        case 'CredentialsSignin':
-          return 'Invalid credentials.';
-        default:
-          return 'Something went wrong.';
-      }
-    }
-    throw error;
-  }
-}
+const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
+// === Types ===
 export type State = {
   errors?: {
     customerId?: string[];
@@ -53,6 +36,26 @@ export type State = {
   };
   message?: string | null;
 };
+
+// === Actions ===
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (err) {
+    if (err instanceof AuthError) {
+      switch (err.type) {
+        case 'CredentialsSignin':
+          return 'Invalid credentials.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    throw err;
+  }
+}
 
 export async function createInvoice(prevState: State, formData: FormData) {
   const validatedFields = CreateInvoice.safeParse({
@@ -77,7 +80,7 @@ export async function createInvoice(prevState: State, formData: FormData) {
       INSERT INTO invoices (customer_id, amount, status, date)
       VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
     `;
-  } catch (error) {
+  } catch {
     return { message: "Database Error: Failed to Create Invoice." };
   }
 
@@ -117,7 +120,7 @@ export async function updateInvoice(
       SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
       WHERE id = ${id}
     `;
-  } catch (error) {
+  } catch {
     return { message: "Database Error: Failed to Update Invoice." };
   }
 
