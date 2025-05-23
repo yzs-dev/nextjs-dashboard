@@ -103,7 +103,8 @@ async function seedRevenue() {
 
 export async function GET() {
   try {
-    const result = await sql.begin((sql) => [
+    // Removed unused parameter `sql`
+    await sql.begin(() => [
       seedUsers(),
       seedCustomers(),
       seedInvoices(),
@@ -115,3 +116,4 @@ export async function GET() {
     return Response.json({ error }, { status: 500 });
   }
 }
+
