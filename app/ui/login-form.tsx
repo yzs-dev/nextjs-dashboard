@@ -1,5 +1,5 @@
 'use client';
-
+ 
 import { lusitana } from '@/app/ui/fonts';
 import {
   AtSymbolIcon,
@@ -8,36 +8,20 @@ import {
 } from '@heroicons/react/24/outline';
 import { ArrowRightIcon } from '@heroicons/react/20/solid';
 import { Button } from '@/app/ui/button';
-import { useState } from 'react';
+import { useActionState } from 'react';
 import { authenticate } from '@/app/lib/actions';
-import { useSearchParams, useRouter } from 'next/navigation';
-
+import { useSearchParams } from 'next/navigation';
+ 
 export default function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
-  const router = useRouter();
-
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPending, setIsPending] = useState(false);
-
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsPending(true);
-    setErrorMessage(null);
-
-    const formData = new FormData(event.currentTarget);
-    try {
-      await authenticate(formData);
-      router.push(callbackUrl);
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Login failed.');
-    } finally {
-      setIsPending(false);
-    }
-  }
-
+  const [errorMessage, formAction, isPending] = useActionState(
+    authenticate,
+    undefined,
+  );
+ 
   return (
-    <form onSubmit={onSubmit} method="post" className="space-y-3" noValidate>
+    <form action={formAction} className="space-y-3">
       <div className="flex-1 rounded-lg bg-gray-50 px-6 pb-4 pt-8">
         <h1 className={`${lusitana.className} mb-3 text-2xl`}>
           Please log in to continue.
@@ -84,7 +68,7 @@ export default function LoginForm() {
           </div>
         </div>
         <input type="hidden" name="redirectTo" value={callbackUrl} />
-        <Button className="mt-4 w-full" aria-disabled={isPending} disabled={isPending}>
+        <Button className="mt-4 w-full" aria-disabled={isPending}>
           Log in <ArrowRightIcon className="ml-auto h-5 w-5 text-gray-50" />
         </Button>
         <div
